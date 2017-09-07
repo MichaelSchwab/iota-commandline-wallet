@@ -6,14 +6,13 @@ Installation:
 Install nodejs Version >= 8.0
 create a directory and put the my-wallet.js and iota-wallet-config.js in there
 
-install additional modules
+Install additional modules
 
 `npm install iota.lib.js`
 
 `npm install nedb`
 
-Now you are ready to rum
-enter
+Now you are ready to run, enter:
 `node my-wallet.js help`
 
 Introductional Video
