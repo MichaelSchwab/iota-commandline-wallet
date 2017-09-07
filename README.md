@@ -8,10 +8,10 @@ create a directory and put the my-wallet.js and iota-wallet-config.js in there
 
 install additional modules
 
-npm install iota.lib.js
-npm install nedb
+`npm install iota.lib.js`
+`npm install nedb`
 
 Now you are ready to rum
 enter
-node my-wallet.js help
+`node my-wallet.js help`
 
