@@ -16,3 +16,5 @@ Now you are ready to rum
 enter
 `node my-wallet.js help`
 
+Introductional Video
+https://www.youtube.com/watch?v=nWo1vwNsXfo
