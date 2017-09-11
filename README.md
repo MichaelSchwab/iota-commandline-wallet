@@ -29,7 +29,7 @@ Setting up a IOTA full node, just a brief overview
 5. Copy the iri to a directory where it can be executed in.
 6. Write a startup script. Just one line is enough. Example: java -Xmx1G -jar iri-1.3.2.jar -c iri.ini --remote --remote-limit-api "removeNeighbors, addNeighbors, interruptAttachingToTangle, attachToTangle"
 7. Get neighbours, therefore goto https://slack.iota.org/ and join the community and enter the channel nodesharing. On this cannel are more people like you searching for neighbours, just get in touch and find 4-9 Neighbours.
-7. Edit iri.ini suit your needs.
+8. Edit iri.ini suit your needs.
 
 A more detailed description can be found
 [here] (https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1-2-1/1332)
