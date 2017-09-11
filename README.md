@@ -15,8 +15,17 @@ Install additional modules
 
 `npm install nedb`
 
+Now you need to edit the configuration file to enter your seed
+and the URL of the IOTA full node you want to use.
+
+See the contents of the file: iota-wallet-config.js
+Please take the time to read all comments in the file to fully understand what you are doing!
+
 Now you are ready to run, enter:
+`node my-wallet.js`
 `node my-wallet.js help`
+`node my-wallet.js SyncAll`
+`node my-wallet.js ShowBalance`
 
 Introductional Video
 https://www.youtube.com/watch?v=nWo1vwNsXfo
