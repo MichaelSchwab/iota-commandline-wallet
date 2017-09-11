@@ -15,8 +15,11 @@ Install additional modules
 
 `npm install nedb`
 
+Setup:
+
 Now you need to edit the configuration file to enter your seed
 and the URL of the IOTA full node you want to use.
+For suggestions which node to use see: http://iotasupport.com/lightwallet.shtml
 
 See the contents of the file: iota-wallet-config.js
 Please take the time to read all comments in the file to fully understand what you are doing!
