@@ -23,8 +23,11 @@ Please take the time to read all comments in the file to fully understand what y
 
 Now you are ready to run, enter:
 `node my-wallet.js`
+
 `node my-wallet.js help`
+
 `node my-wallet.js SyncAll`
+
 `node my-wallet.js ShowBalance`
 
 Introductional Video
