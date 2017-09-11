@@ -22,6 +22,7 @@ See the contents of the file: iota-wallet-config.js
 Please take the time to read all comments in the file to fully understand what you are doing!
 
 Now you are ready to run, enter:
+
 `node my-wallet.js`
 
 `node my-wallet.js help`
