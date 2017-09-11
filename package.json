@@ -19,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/MichaelSchwab/iota-commandline-wallet/issues"
   },
-  "homepage": "https://github.com/MichaelSchwab/iota-commandline-wallet#readme"
+  "homepage": "https://github.com/MichaelSchwab/iota-commandline-wallet#readme",
+  "dependencies": {
+    "iota.lib.js": "^0.4.0",
+    "nedb": "^1.8.0"
+  }
 }

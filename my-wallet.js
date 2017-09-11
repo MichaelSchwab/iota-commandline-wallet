@@ -38,12 +38,17 @@
 // 4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
 // 5. overused = has more than one outgoing transaction, this should not happen, but can be forced by the user
 
+// Global Variables
+
+// Make all config options globally available
+var config; // configuration object
+var cmd_filename; // filename of the wallet programm itself
+
 main();
 
 async function main()
 {
-    var config;
-    var version = "Version 0.5 Beta";
+    var version = "Version 0.6 Beta";
     try
     {
         config = require('./iota-wallet-config');
@@ -68,25 +73,29 @@ async function main()
     }
 
     // Get filename in order to find the right config section in iota-wallet-config.js
-    var filename = path.basename(process.argv[1]);
-    filename = filename.substr(0,filename.length-3);
-    if (config[filename] == undefined)
+    cmd_filename = path.basename(process.argv[1]);
+    cmd_filename = cmd_filename.substr(0,cmd_filename.length-3);
+    debug_output("Using config: "+cmd_filename,9);
+
+    if (config[cmd_filename] == undefined)
     {
-        error_output("no config section named  "+filename+"  in file iota-wallet-config.js found, please add one");
+        error_output("no config section named  "+cmd_filename+"  in file iota-wallet-config.js found, please add one");
         return;
     }
 
-    debug_output("Using config: "+filename,9);
 
     var db;
-    try { db = new Datastore({ filename: config[filename].databaseFile, autoload: true }); }
+    try
+    {
+        db = new Datastore({ filename: config[cmd_filename].databaseFile, autoload: true });
+    }
     catch(e)
     {
         error_output("Database initialisation failed. "+e.message);
         return;
     }
 
-    var seed = config[filename].seed;
+    var seed = config[cmd_filename].seed;
     if ( seed == "")
     { error_output("No seed provided, please enter your seed into the configuration file"); return;}
 
@@ -104,7 +113,7 @@ async function main()
         return;
     }
 
-    if (command == "help" || command == "Help")
+    else if (command == "help" || command == "Help")
     {
         showcommands(version);
         return;
@@ -115,7 +124,7 @@ async function main()
     // syncall syncs all addresses in the database even they should not be used for new transactions anymore
     // and rebuilds the entire database.
     // You could delete the database and rebuild it with SyncAll when you have no pending transactions.
-    if (command == "Sync" || command == "SyncAll" || command == "S" || command == "SA")
+    else if (command == "Sync" || command == "SyncAll" || command == "S" || command == "SA")
     {
         var end;
         var sync_all_flag = 0;
@@ -136,9 +145,8 @@ async function main()
     }
 
 
-    // Show Database only show non new addresses in order to avoid to copy paste
-    // them and mess up the DB hosekeeping, always use GetNewAddress to get a new address
-    if (command == "SDB" || command == "ShowDB" || command == "ShowEntireDB")
+    // Show Database
+    else if (command == "SDB" || command == "ShowDB" || command == "ShowEntireDB")
     {
         var flag = 0;
         if ( command == "ShowEntireDB" ) { flag = 1; }
@@ -169,14 +177,14 @@ async function main()
     }
 
     // Display a compeltely unused address
-    if (command == "GNA" || command == "GetNewAddress")
+    else if (command == "GNA" || command == "GetNewAddress")
     {
         cmd_result = await get_new_address(db,iota,seed);
         json_output(cmd_result);
     }
 
     // Get the status of a transaction
-    if (command == "GetConfirmationState" || command == "GCS" )
+    else if (command == "GetConfirmationState" || command == "GCS" )
     {
         var bundle_hash = process.argv[3];
         if (bundle_hash == undefined || iota.valid.isHash(bundle_hash) == false)
@@ -190,7 +198,7 @@ async function main()
     }
 
     // Send IOTA to an Address
-    if (command == "send" || command == "Send" || command == "transfer" || command == "Transfer")
+    else if (command == "send" || command == "Send" || command == "transfer" || command == "Transfer")
     {
         var address = process.argv[3];
         if (address == undefined || iota.valid.isAddress(address) == false)
@@ -205,10 +213,23 @@ async function main()
             error_output("please provide a vaild amount to transfer");
             return;
         }
+
+        try
+        {
+            //Update balances first
+            var update_balances_result = await updateBalances(db, iota);
+        }
+        catch(e)
+        {
+            console.log("ERROR: "+e.message);
+            return;
+        }
+
         try
         {
             var json_result = {};
-            var transfer_result = await execute_transfer(db, iota, seed, address, amount, "", "");
+            //execute_transfer(db, iota, seed, dst_address, value, message, tag);
+            var transfer_result = await execute_transfer(db, iota, seed, address, amount, "COMMAND9LINE9WALLET9ZERO9SIX9BETA", "");
 
             for(var i=0; i < transfer_result.length; i++)
             {
@@ -231,15 +252,34 @@ async function main()
     }
 
     // Get all balances from server and update database
-    if (command == "UpdateBalances" || command == "UBS")
+    else if (command == "UpdateBalances" || command == "UBS")
     {
-        await updateBalances(db, iota);
+        try
+        {
+            var result = await updateBalances(db, iota);
+            json_output(result);
+        }
+        catch(e)
+        {
+            console.log("ERROR: "+e.message);
+            return;
+        }
+
     }
 
-    if (command == "ShowBalance" || command == "SB")
+    else if (command == "ShowBalance" || command == "SB")
     {
         var query = {};
-        var rows = await dbFind(db,query,{index: 1});
+        try
+        {
+            var rows = await dbFind(db,query,{index: 1});
+        }
+        catch(e)
+        {
+            console.log("ERROR: "+e.message);
+            return;
+        }
+
         var i;
         var balance = 0;
 
@@ -257,7 +297,7 @@ async function main()
         //debug_output("Balance: "+balance+" iota",1);
     }
 
-    if (command == "Replay" || command == "R")
+    else if (command == "Replay" || command == "R")
     {
         var address = process.argv[3];
         if (address == undefined || iota.valid.isAddress(address) == false)
@@ -266,104 +306,38 @@ async function main()
             return;
         }
 
-        // 1. Get all transactions for this address
-        var transactions = await findTransactions(iota, { addresses: [address] });
+        var bundles = await getBundlesToReplay(iota, address);
+        var bundle;
 
-        var bundles = {};
-
-        for (var i = 0; i < transactions.length; i++)
-        {
-            debug_output("-------------------- TRANSACTION:"+i,9);
-            debug_output("HASH:     "+transactions[i].hash,9);
-            debug_output("BUNDLE    "+transactions[i].bundle,9);
-            debug_output("VALUE     "+transactions[i].value,9);
-            debug_output("INDEX     "+transactions[i].currentIndex,9);
-
-            // 2. Get all bundles
-            // Get the bundles to which the transaction belongs to see all transactions in the bundle
-            // check their inclusion states and find the tailTransaction for a possible replay
-            var transactions_in_bundle = await findTransactions(iota, { bundles: [transactions[i].bundle] });
-
-            // initialize new bundle object with defaults
-            if (bundles[transactions[i].bundle] == undefined)
-            {
-                bundles[transactions[i].bundle] = {};
-                bundles[transactions[i].bundle].confirmedTransactions = 0;
-                bundles[transactions[i].bundle].unconfirmedTransactions = 0;
-                bundles[transactions[i].bundle].tailTransaction = "";
-                bundles[transactions[i].bundle].count = 1;
-                bundles[transactions[i].bundle].validFunding = true;
-                bundles[transactions[i].bundle].fundingAddresses = [];
-            }
-            else
-            {
-                // How many bundles with the same hash were found? if(>1) These are possibly replays
-                bundles[transactions[i].bundle].count++;
-            }
-
-            // 3. Find hashes of bundles which contain unconfirmed transactions
-            for (var j = 0; j < transactions_in_bundle.length; j++)
-            {
-                //debug_output("+++++++++++++++++ BUNDLE TRANSACTION :"+j);
-                //debug_output(JSON.stringify(transactions_in_bundle[j]));
-
-                var inclusionstates = await getLatestInclusion(iota, [transactions_in_bundle[j].hash] );
-                var inclusion = inclusionstates[0];
-                //debug_output("INCLUSION "+inclusion);
-
-                // Find the tail transaction where currentIndex == 0 in the bundle
-                // this transaction hash is required later to replay the bundle
-                if (transactions_in_bundle[j].currentIndex == 0)
-                { bundles[transactions[i].bundle].tailTransaction = transactions_in_bundle[j].hash; }
-
-                if ( inclusion == true )
-                { bundles[transactions[i].bundle].confirmedTransactions++; }
-
-                if ( inclusion == false )
-                { bundles[transactions[i].bundle].unconfirmedTransactions++; }
-
-                // 4. Chek for balances on funding the bundles if they are still valid do a replay
-                // found a funding transaction
-                if ( transactions_in_bundle[j].value < 0 )
-                {
-                    // get the balance
-                    var balances = await getBalance(iota, [transactions_in_bundle[j].address]);
-                    var balance = balances.balances[0];
-                    var needed_balance = transactions_in_bundle[j].value * -1;
-                    bundles[transactions[i].bundle].fundingAddresses.push(transactions_in_bundle[j].address);
-                    if (balance !=  needed_balance)
-                    {
-                        //debug_output("Insufficent balance! Need: "+needed_balance+" current balance is: "+balance)
-                        bundles[transactions[i].bundle].validFunding = false;
-                    }
-                    else
-                    {
-                        //debug_output("Balance is ok");
-                    }
-                }
-                //debug_output(" ");
-            }
-        }
-
-        debug_output(" ");
         // Check all bundles finding confirmation state and alredy done replays
+        // Debug output
         for (bundle in bundles)
         {
-            debug_output("BUNDLE: "+bundle,9);
-            debug_output("COUNT: "+bundles[bundle].count+" CONFIRMED Tx IN BUNDLE: "+bundles[bundle].confirmedTransactions+" UNCONFIRMED Tx: "+bundles[bundle].unconfirmedTransactions+" TAIL: "+bundles[bundle].tailTransaction+" Funding: "+bundles[bundle].validFunding,9);
+            debug_output("BUNDLE: "+bundle,3);
+            debug_output("REPLAY COUNT: "+bundles[bundle].count+" CONFIRMED Tx IN BUNDLE: "+bundles[bundle].confirmedTransactions+" UNCONFIRMED Tx: "+bundles[bundle].unconfirmedTransactions+" TAIL: "+bundles[bundle].tailTransaction+" Funding: "+bundles[bundle].validFunding,3);
             debug_output("FUNDING ADDRESS: "+bundles[bundle].fundingAddresses,9);
             debug_output(" ",9);
         }
 
+        // Start Replay
         var json_result = [];
         for (bundle in bundles)
         {
             if (bundles[bundle].validFunding == true && bundles[bundle].confirmedTransactions == 0)
             {
                 debug_output("Replaying",3);
-                debug_output("COUNT: "+bundles[bundle].count+" CONFIRMED Tx IN BUNDLE: "+bundles[bundle].confirmedTransactions+" UNCONFIRMED Tx: "+bundles[bundle].unconfirmedTransactions+" TAIL: "+bundles[bundle].tailTransaction+" Funding: "+bundles[bundle].validFunding,3);
+                debug_output("REPLAY COUNT: "+bundles[bundle].count+" CONFIRMED Tx IN BUNDLE: "+bundles[bundle].confirmedTransactions+" UNCONFIRMED Tx: "+bundles[bundle].unconfirmedTransactions+" TAIL: "+bundles[bundle].tailTransaction+" Funding: "+bundles[bundle].validFunding,3);
 
-                var result = await replayBundle(iota, bundles[bundle].tailTransaction, 5, 15); // 5 = tip selection depth , 15 = minWeightMagnitude
+                try
+                {
+                    var result = await replayBundle(iota, bundles[bundle].tailTransaction, 5, 15); // 5 = tip selection depth , 15 = minWeightMagnitude
+                }
+                catch(e)
+                {
+                    console.log("ERROR: "+e.message);
+                    process.exit(1);
+                }
+
                 json_result.push(result[0].bundle);
             }
         }
@@ -373,8 +347,67 @@ async function main()
 
     }
 
-    // Get all balances from server and update database
-    if (command == "GetBundles" || command == "GBS")
+    else if (command == "FullyAutomaticReplay")
+    {
+        if ( config.provider == "http://node.iotawallet.info:14265" || config.provider == "http://iota.bitfinex.com:80")
+        {
+            error_output("Please setup your own node in order to use this feature since it puts a very high load on the node used!");
+            return;
+        }
+
+        var address = process.argv[3];
+        if (address == undefined || iota.valid.isAddress(address) == false)
+        {
+            error_output("please provide a vaild address to do automatic replaying");
+            return;
+        }
+
+        var bundles = await getBundlesToReplay(iota, address);
+        var bundle;
+        for (bundle in bundles)
+        {
+            debug_output("Checking bundle: "+bundle,0);
+            var confirmation_state = await getBundleConfirmationState(iota, bundle);
+            bundles[bundle].confirmedTransactions = confirmation_state.confirmedTransactionsCount;
+
+            if ( bundles[bundle].validFunding == false )
+            { debug_output("No funding for this bundle, can not be confirmed, so no replay.",0); }
+
+            // Replay and check confirmation status
+            var i = 0;
+            while (bundles[bundle].confirmedTransactions == 0 && bundles[bundle].validFunding == true && i < 7)
+            {
+                debug_output("Considering a replay waiting 150 seconds:",0);
+                await sleep(150);
+
+                // Check confirmation state before replaying
+                var confirmation_state = await getBundleConfirmationState(iota, bundle);
+                bundles[bundle].confirmedTransactions = confirmation_state.confirmedTransactionsCount;
+                debug_output("Confirmation state: " + confirmation_state.status,0);
+
+                if (bundles[bundle].validFunding == true && bundles[bundle].confirmedTransactions == 0)
+                {
+                    debug_output("Replaying bundle "+bundle,0);
+
+                    try
+                    {
+                        var result = await replayBundle(iota, bundles[bundle].tailTransaction, 5, 15); // 5 = tip selection depth , 15 = minWeightMagnitude
+                    }
+                    catch(e)
+                    {
+                        console.log("ERROR: "+e.message);
+                        process.exit(1);
+                    }
+                }
+                i++;
+            }
+            var confirmation_state = await getBundleConfirmationState(iota, bundle);
+            debug_output("Final confirmation state of bundle "+bundle+" is "+confirmation_state.status,0);
+        }
+    } // end FullyAutomaticReplay
+
+    // Get all bundeles associated with an address
+    else if (command == "GetBundles" || command == "GBS")
     {
         var address = process.argv[3];
         if (address == undefined || iota.valid.isAddress(address) == false)
@@ -383,10 +416,23 @@ async function main()
             return;
         }
 
-        var bundles = await getBundles(db, iota, address);
+        try
+        {
+            var bundles = await getBundles(db, iota, address);
+        }
+        catch(e)
+        {
+            console.log("ERROR: "+e.message);
+            process.exit(1);
+        }
         json_output(bundles);
     }
 
+    // Command not found
+    else
+    {
+        error_output("Invalid command "+command);
+    }
 } // end main function
 
 /* Subroutines
@@ -418,10 +464,11 @@ function showcommands(version)
     debug_output("Transfer              Address Amount      Sends amount of iota to the given address",0);
     debug_output("GetNewAddress         none                Gives you a brand new address to send out for receiving funds",0);
     debug_output("GetBundles            Address             Gives you all bundles associated with the given address",0);
-    debug_output("GetConfirmationState  Bundlehash          Gives you the confirmation state of a bundle",0);
+    debug_output("GetConfirmationState  BundleHash          Gives you the confirmation state of a bundle",0);
     debug_output("UpdateBalances        none                Update all balances of all addresses in the database",0);
     debug_output("ShowBalance           none                Show the total balance of the wallet, be sure to UpdateBalances before",0);
     debug_output("Replay                Address             Replay all unconfirmed transactions associated with the given address",0);
+    debug_output("FullyAutomaticReplay  Address             Replays all unconfirmed transactions associated with the given address, fully automatic up to 7 times",0);
     debug_output("ShowDB                none                Shows data from the local database",0);
 
     debug_output("",0);
@@ -435,7 +482,7 @@ function showcommands(version)
 
 function debug_output(message,loglevel)
 {
-    if (loglevel <= 3)
+    if (loglevel <= config[cmd_filename].debugLevel)
     {
         console.log(message);
     }
@@ -514,7 +561,7 @@ async function updateBalances(db_handle, iota)
         var i;
         var address_array = [];
         var balances;
-
+        var total_balance = 0;
         if (rows.length == 0)
         {
             error_output("No addresses in database");
@@ -530,13 +577,26 @@ async function updateBalances(db_handle, iota)
                 {
                     var query = { address: address_array[j] };
                     var balance = parseInt(balances.balances[j]);
+                    total_balance += balance;
                     var update_result = await dbUpdate(db_handle,query,{ $set: {balance: balance }});
+
+                    // Update Address status
+                    var adr_rows = await dbFind(db_handle,query);
+                    if ( adr_rows.length == 1)
+                    {
+                        if ( adr_rows[0].status == "published" && adr_rows[0].balance > 0 )
+                        {
+                            var adr_update_result = await dbUpdate(db_handle,query,{ $set: {status: "used" }});
+                        }
+                    }
+
                     //console.log("Update result:"+JSON.stringify(update_result));
                 }
                 address_array = [];
                 debug_output("Balances:"+JSON.stringify(balances),4);
             }
         }
+        return result = {addressCount: rows.length, totalBalance: total_balance};
 }
 
 
@@ -574,7 +634,13 @@ async function execute_transfer(db_handle, iota, seed, dst_address, value, messa
                     var input = {};
                     debug_output("FUNDING ADR: "+rows[i].address+" BALANCE: "+rows[i].balance,4);
                     input.address = iota.utils.noChecksum(rows[i].address);
-                    input.security = 2;
+
+                    if (rows[i].securityLevel == undefined)
+                    { input.security = config[cmd_filename].addressSecurityLevel; }
+                    else
+                    { input.security = rows[i].securityLevel; }
+
+                    input.security = config[cmd_filename].addressSecurityLevel;
                     input.keyIndex = parseInt(rows[i].index);
                     funding_array.push(input);
                     total += parseInt(rows[i].balance);
@@ -629,6 +695,103 @@ function doTransfer(iota, from_seed,transfers,options)
                         });
 }
 
+
+async function getBundlesToReplay(iota, address)
+{
+
+    // 1. Get all transactions for this address
+    try
+    {
+        var transactions = await findTransactions(iota, { addresses: [address] });
+    }
+    catch(e)
+    {
+        error_output(e.message);
+        process.exit(1);
+    }
+
+    var bundles = {};
+
+    for (var i = 0; i < transactions.length; i++)
+    {
+        debug_output("-------------------- TRANSACTION:"+i,4);
+        debug_output("HASH:     "+transactions[i].hash,4);
+        debug_output("BUNDLE    "+transactions[i].bundle,9);
+        debug_output("VALUE     "+transactions[i].value,9);
+        debug_output("INDEX     "+transactions[i].currentIndex,9);
+
+        // 2. Get all bundles
+        // Get the bundles to which the transaction belongs to see all transactions in the bundle
+        // check their inclusion states and find the tailTransaction for a possible replay
+        var transactions_in_bundle = await findTransactions(iota, { bundles: [transactions[i].bundle] });
+
+        // initialize new bundle object with defaults
+        if (bundles[transactions[i].bundle] == undefined)
+        {
+            // Set Defaults
+            bundles[transactions[i].bundle] = {};
+            bundles[transactions[i].bundle].confirmedTransactions = 0;
+            bundles[transactions[i].bundle].unconfirmedTransactions = 0;
+            bundles[transactions[i].bundle].tailTransaction = "";
+            bundles[transactions[i].bundle].count = 1;
+            bundles[transactions[i].bundle].validFunding = true;
+            bundles[transactions[i].bundle].fundingAddresses = [];
+
+            // Get all data from bundle
+            // 3. Find hashes of the bundle which contain unconfirmed transactions
+            for (var j = 0; j < transactions_in_bundle.length; j++)
+            {
+                debug_output("+++++++++++++++++ BUNDLE TRANSACTION :"+j,4);
+                //debug_output(JSON.stringify(transactions_in_bundle[j]));
+
+                var inclusionstates = await getLatestInclusion(iota, [transactions_in_bundle[j].hash] );
+                var inclusion = inclusionstates[0];
+                debug_output("INCLUSION "+inclusion,4);
+
+                // Find the tail transaction where currentIndex == 0 in the bundle
+                // this transaction hash is required later to replay the bundle
+                if (transactions_in_bundle[j].currentIndex == 0)
+                { bundles[transactions[i].bundle].tailTransaction = transactions_in_bundle[j].hash; }
+
+                if ( inclusion == true )
+                { bundles[transactions[i].bundle].confirmedTransactions++; }
+
+                if ( inclusion == false )
+                { bundles[transactions[i].bundle].unconfirmedTransactions++; }
+
+                // 4. Chek for balances on funding the bundles if they are still valid do a replay
+                // found a funding transaction
+                if ( transactions_in_bundle[j].value < 0 )
+                {
+                    // get the balance
+                    var balances = await getBalance(iota, [transactions_in_bundle[j].address]);
+                    var balance = balances.balances[0];
+                    var needed_balance = transactions_in_bundle[j].value * -1;
+                    bundles[transactions[i].bundle].fundingAddresses.push(transactions_in_bundle[j].address);
+                    if (balance !=  needed_balance)
+                    {
+                        debug_output("Insufficent balance! Need: "+needed_balance+" current balance is: "+balance,4)
+                        bundles[transactions[i].bundle].validFunding = false;
+                    }
+                    else
+                    {
+                        //debug_output("Balance is ok");
+                    }
+                }
+                //debug_output(" ");
+            }
+        }
+        else
+        {
+            // How many bundles with the same hash were found? if(>1) These are possibly replays
+            bundles[transactions[i].bundle].count++;
+        }
+
+
+    }
+    return bundles;
+}
+
 async function get_new_address(db_handle,iota,seed,status)
 {
     var address = "";
@@ -673,17 +836,17 @@ async function addNewAddress(db_handle,iota,seed,adr_index)
         {
             adr_index = 0;
         }
-        debug_output("NEXT INDEX:"+adr_index);
+        debug_output("NEXT INDEX:"+adr_index,4);
     }
 
     address = await getNewAddress(iota,seed,adr_index);
     address = address[0];
 
-    debug_output("Adding address to db: "+address);
+    debug_output("Adding address to db: "+address,4);
 
-    var data = { index: adr_index, address: address, balance: 0, status: "new" };
+    var data = { index: adr_index, address: address, balance: 0, status: "new", securityLevel: config[cmd_filename].addressSecurityLevel };
     await dbInsert(db_handle,data);
-    debug_output('successfully added');
+    debug_output('successfully added',4);
     return address;
 }
 
@@ -774,7 +937,7 @@ async function update_address_database(db_handle,iota,seed,start_adr_index,max_a
 
             adr_index++;
 
-        } while ( (adr_index < max_adr_index && max_adr_index > 0) || (max_adr_index == 0 && inclusion == true) || (max_adr_index == -1 && new_address_count < 3) )
+        } while ( (adr_index < max_adr_index && max_adr_index > 0) || (max_adr_index == 0 && inclusion == true) || (max_adr_index == -1 && new_address_count < 10) )
 }
 
 function getLatestInclusion (iotaHandle, transaction_hashes)
@@ -849,7 +1012,7 @@ function getNewAddress(iotaHandle,seed,index)
     return new Promise(
         function(resolve, reject)
         {
-            iotaHandle.api.getNewAddress(seed , {"index": index, "checksum": true, "total": 1, "security": 2, "returnAll": false},
+            iotaHandle.api.getNewAddress(seed , {"index": index, "checksum": true, "total": 1, "security": config[cmd_filename].addressSecurityLevel, "returnAll": false},
                 function(error, success) {
                     if (error) {
                         reject(error);
@@ -988,6 +1151,20 @@ function replayBundle(iotaHandle, tail, depth, minWeightMagnitude)
                     }
                 }
             );
+        }
+    );
+}
+
+/*
+ * Sleep for a number of seconds
+ *
+ */
+async function sleep(x)
+{
+    return new Promise(
+        function (resolve, reject)
+        {
+            setTimeout(function() {resolve();},x*1000);
         }
     );
 }
