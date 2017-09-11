@@ -36,5 +36,3 @@ on https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1
 and
 on https://github.com/iotaledger/iri
 
-
-
