@@ -32,9 +32,9 @@ Setting up a IOTA full node, just a brief overview
 8. Edit iri.ini suit your needs.
 
 A more detailed description can be found
-[here] (https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1-2-1/1332)
+on https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1-2-1/1332
 and
-[here] (https://github.com/iotaledger/iri)
+on https://github.com/iotaledger/iri
 
 
 
