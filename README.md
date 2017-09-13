@@ -37,6 +37,13 @@ Now you are ready to run, enter:
 Introductional Video
 https://www.youtube.com/watch?v=nWo1vwNsXfo
 
+Address states used are:
+1. new = unused not attached to tangle
+2. attached = has one or more transactions with value 0
+3. used = has transactions but no outgoing transactions and balance > 0
+4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
+5. overused = has more than one outgoing transaction, this should not happen, but can be forced by the user
+
 Setting up a IOTA full node, just a brief overview
 1. Get access (or setup yourself) to a 64Bit Windows or Linux or Mac server which has a public IP or can be reached from the internet using something like DynDns
 2. Be sure the server runs 24/7 and is intended to alwas be connected to the internet.
