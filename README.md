@@ -1,10 +1,18 @@
 # IOTA commandline wallet
 A commandline based wallet for the IOTA crypto currency, based on nodejs
 
+If you are familiar with DOS commandline, or Linux is your preferred OS this is for you.
+I have made everything as simple as possible, there are Videos for installation and operation,
+but still users not familiar with command line operations might have their problems.
+
+If somebody wants to build a GUI on top, you are welcome to do so.
+
 In order to run the wallet on an regular basis, consider to run your own IOTA full node,
 how to do this is shown in the section "Setting up a IOTA full node" below.
 
 Installation:
+
+Youtube video guideing you through the installation: https://www.youtube.com/watch?v=ke1NERpgbd4
 
 Install nodejs Version >= 8.0.0
 create a directory and put the my-wallet.js and iota-wallet-config.js in there
@@ -34,7 +42,10 @@ Now you are ready to run, enter:
 
 `node my-wallet.js ShowBalance`
 
-Introductional Video
+Youtube video on how to operate the wallet:
+https://www.youtube.com/watch?v=cwTxv-LnvYw
+
+Old Introductional Video
 https://www.youtube.com/watch?v=nWo1vwNsXfo
 
 Address states used are:
