@@ -48,7 +48,7 @@ main();
 
 async function main()
 {
-    var version = "Version 0.6 Beta";
+    var version = "Version 0.7.0 Beta";
     try
     {
         config = require('./iota-wallet-config');
@@ -141,7 +141,17 @@ async function main()
         {
             end = -1;
         }
-        await update_address_database(db, iota, seed, 0, end, sync_all_flag);
+
+        try
+        {
+            await update_address_database(db, iota, seed, 0, end, sync_all_flag);
+        }
+        catch(e)
+        {
+            error_output("Sync failed. "+e.message);
+            return;
+        }
+
     }
 
 
@@ -152,7 +162,16 @@ async function main()
         if ( command == "ShowEntireDB" ) { flag = 1; }
         var i;
         var query = { };
-        var rows = await dbFind(db,query,{index: 1});
+        try
+        {
+            var rows = await dbFind(db,query,{index: 1});
+        }
+        catch(e)
+        {
+            error_output("ShowDB failed. "+e.message);
+            return;
+        }
+
         if ( rows.length == 0)
         {
             return;
@@ -179,7 +198,13 @@ async function main()
     // Display a compeltely unused address
     else if (command == "GNA" || command == "GetNewAddress")
     {
-        cmd_result = await get_new_address(db,iota,seed);
+        try
+        { cmd_result = await get_new_address(db,iota,seed); }
+        catch(e)
+        {
+            error_output("GetNewAddress failed. "+e.message);
+            return;
+        }
         json_output(cmd_result);
     }
 
@@ -193,8 +218,17 @@ async function main()
             return;
         }
 
-        var result = await getBundleConfirmationState(iota, bundle_hash);
-        json_output(result);
+        try
+        {
+            var result = await getBundleConfirmationState(iota, bundle_hash);
+            json_output(result);
+        }
+        catch(e)
+        {
+            error_output(e.message);
+            return;
+        }
+
     }
 
     // Send IOTA to an Address
@@ -221,7 +255,7 @@ async function main()
         }
         catch(e)
         {
-            console.log("ERROR: "+e.message);
+            error_output("Balance update before doing a transaction failed. "+e.message);
             return;
         }
 
@@ -229,7 +263,7 @@ async function main()
         {
             var json_result = {};
             //execute_transfer(db, iota, seed, dst_address, value, message, tag);
-            var transfer_result = await execute_transfer(db, iota, seed, address, amount, "COMMAND9LINE9WALLET9ZERO9SIX9BETA", "");
+            var transfer_result = await execute_transfer(db, iota, seed, address, amount, "", "");
 
             for(var i=0; i < transfer_result.length; i++)
             {
@@ -246,7 +280,7 @@ async function main()
         }
         catch(e)
         {
-            console.log("ERROR: "+e.message);
+            error_output("Transfer failed. "+e.message);
             return;
         }
     }
@@ -261,7 +295,7 @@ async function main()
         }
         catch(e)
         {
-            console.log("ERROR: "+e.message);
+            error_output("Updating balances failed. "+e.message);
             return;
         }
 
@@ -276,7 +310,7 @@ async function main()
         }
         catch(e)
         {
-            console.log("ERROR: "+e.message);
+            error_output("ShowBalance failed. "+e.message);
             return;
         }
 
@@ -285,7 +319,7 @@ async function main()
 
         if (rows.length == 0)
         {
-            error_output("No addresses in database");
+            error_output("No addresses in database, execute SyncAll to generate addresses");
             return;
         }
 
@@ -334,10 +368,9 @@ async function main()
                 }
                 catch(e)
                 {
-                    console.log("ERROR: "+e.message);
-                    process.exit(1);
+                    error_output("Replay failed. "+e.message);
+                    return;
                 }
-
                 json_result.push(result[0].bundle);
             }
         }
@@ -377,8 +410,8 @@ async function main()
             var i = 0;
             while (bundles[bundle].confirmedTransactions == 0 && bundles[bundle].validFunding == true && i < 7)
             {
-                debug_output("Considering a replay waiting 150 seconds:",0);
-                await sleep(150);
+                debug_output("Considering a replay waiting 300 seconds:",0);
+                await sleep(300);
 
                 // Check confirmation state before replaying
                 var confirmation_state = await getBundleConfirmationState(iota, bundle);
@@ -395,8 +428,8 @@ async function main()
                     }
                     catch(e)
                     {
-                        console.log("ERROR: "+e.message);
-                        process.exit(1);
+                        error_output("Replay failed. "+e.message);
+                        return;
                     }
                 }
                 i++;
@@ -422,9 +455,11 @@ async function main()
         }
         catch(e)
         {
-            console.log("ERROR: "+e.message);
-            process.exit(1);
+            error_output("GetBundles failed. "+e.message);
+            return;
         }
+        // Warp the returned array into an object
+        bundles = { bundles: bundles};
         json_output(bundles);
     }
 
@@ -440,17 +475,29 @@ async function main()
  *
  */
 
-/*---------------------------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------------------------*/
 
 function showhelp(version)
 {
     debug_output("Welcome to Mikes IOTA commandline wallet "+version,0);
     debug_output("I highly appreciate that you want to use IOTA.",0);
+    debug_output("I also would like to say thankyou to the donors on reddit",0);
     debug_output("",0);
     debug_output("Please edit the configuration file named iota-wallet-config.js before you start",0);
     debug_output("",0);
+    debug_output("Please report bugs to the issue tracker on GitHub",0);
+    debug_output("",0);
+    debug_output("This is BETA software, it might work, but its not yet profoundly tested, use at your own risk",0);
+    debug_output("",0);
     debug_output("For a complete help just type the word help behind the command",0);
     debug_output("example: node my-wallet.js help",0);
+    debug_output("",0);
+    debug_output("If you like the wallet and want to show your appreciation, you are welcome to make a donation",0);
+    debug_output("My donation Address is:",0);
+    debug_output("SWUNKCJHQK9TQO9AXHIEL9BSUFCWYGMNTUWTGLRRREDLEVXSPD9TQ9EWXAGDLCGMOQKB9HZLILUPZITRBZARWHZ9NZ",0);
+    debug_output("",0);
+    debug_output("If you need some help integrating the wallet into one of your projects, email me.",0);
+    debug_output("You will find the email address in the sourcecode",0);
 }
 
 function showcommands(version)
@@ -490,7 +537,7 @@ function debug_output(message,loglevel)
 
 function error_output(message,loglevel)
 {
-    console.log("ERROR: "+message);
+    debug_output("ERROR: "+message,2);
     console.log("{ status: \"error\", message: \""+message+"\"}");
 }
 
@@ -686,7 +733,12 @@ function doTransfer(iota, from_seed,transfers,options)
                             // so i set it to 15 which sometimes triggers a Invalid transaction hash error
                             // question why is there an error ans what does minWeightMagnitude mean precisely
                             // the lower it is set the more errors occur ... strange
-                            var minWeightMagnitude = 15; // PoW magnitude should be 18
+
+                            // OK got some help on this, 15 is OK for mainnet now. PoW is done
+                            // changing the nonce till the transaction hash has 15 Trits = 5 Trytes at its
+                            // end which are Zero displayed by the digit 9.
+                            // Conclusion: 15 shoud work here.
+                            var minWeightMagnitude = 15;
                             iota.api.sendTransfer(from_seed, depth, minWeightMagnitude, transfers ,options,
                             function(error, success)
                             {
@@ -695,7 +747,11 @@ function doTransfer(iota, from_seed,transfers,options)
                         });
 }
 
-
+/* This function gets all bundles for the suppiled address
+ * then it ckecks if those bundles are unconfirmed
+ * if yes ist checks if the balance of the incoming transaction is still valid.
+ * if yes it retuns an array of bundles. For the object sturcture see the //Set Defaults section of the bundles
+ */
 async function getBundlesToReplay(iota, address)
 {
 
@@ -804,7 +860,7 @@ async function get_new_address(db_handle,iota,seed,status)
         rows = await dbFind(db_handle,query,{index: 1});
         if (rows.length == 0)
         {
-            console.log("Could not get a new address something seems to be wrong with the database, possibly delete it and do a SyncAll to rebuild it");
+            error_output("Could not get a new address something seems to be wrong with the database, possibly delete it and do a SyncAll to rebuild it");
             // ERROR there should be one address!!
         }
     }
@@ -1112,25 +1168,6 @@ function dbDelete(dbHandle,query)
                 {
                     if (err)
                     { reject(err); } else { resolve(numRemoved); }
-                }
-            );
-        }
-    );
-}
-
-
-function getNewAddress(iotaHandle,seed,index)
-{
-    return new Promise(
-        function(resolve, reject)
-        {
-            iotaHandle.api.getNewAddress(seed , {"index": index, "checksum": true, "total": 1, "security": 2, "returnAll": true},
-                function(error, success) {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(success);
-                    }
                 }
             );
         }

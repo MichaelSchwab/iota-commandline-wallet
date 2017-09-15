@@ -24,7 +24,7 @@ module.exports = {
     // Section name, this config section is used when you use my-wallet.js as the name of your wallet programm
     "my-wallet": {
                 seed: "MY9SEED9HERE",
-                databaseFile: "my-wallet.db",
+                databaseFile: "database-my-wallet.db",
                 // Security Level of the Addresses used
                 // Only change this if you know what you are doing. Available choices are 1, 2 and 3.
                 // Delete the database file, and do a SyncAll after changing this value
@@ -37,7 +37,7 @@ module.exports = {
     // Section name, this config section is used when you use alices-wallet.js as the name of your wallet programm
     "alices-wallet": {
                 seed: "ALICES9SEED9HERE",
-                databaseFile: "alices-wallet.db",
+                databaseFile: "database-alices-wallet.db",
 
                 // Security Level of the Addresses used
                 // Only change this if you know what you are doing. Available choices are 1, 2 and 3.
@@ -50,7 +50,7 @@ module.exports = {
     // Section name, this config section is used when you use bobs-wallet.js as the name of your wallet programm
     "bobs-wallet": {
                 seed: "BOBS9SEED9HERE",
-                databaseFile: "bobs-wallet.db",
+                databaseFile: "database-bobs-wallet.db",
                 // Security Level of the Addresses used
                 // Only change this if you know what you are doing. Available choices are 1, 2 and 3.
                 // Delete the database file, and do a SyncAll after changing this value
