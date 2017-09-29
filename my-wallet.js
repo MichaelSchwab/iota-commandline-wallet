@@ -19,6 +19,9 @@
  *
  * For more information on the GPL, please go to:
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * For commercial purposes different licenses are
+ * available from the author.
 */
 
 /*
@@ -38,24 +41,35 @@
 // 4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
 // 5. overused = has more than one outgoing transaction, this should not happen, but can be forced by the user
 
+
 // Global Variables
 
 // Make all config options globally available
 var config; // configuration object
 var cmd_filename; // filename of the wallet programm itself
 
+// Catch SIGINT = Ctrl+C do not allow to terminate the script at any point
+// this might corrupt the database when interrupted while writing
+process.on  ('SIGINT',
+                        function()
+                        {
+                            console.log("Please dont interrupt this process, this might corrupt the database or trigger unexpected behaviour.");
+                        }
+            );
+
 main();
 
 async function main()
 {
-    var version = "Version 0.7.0 Beta";
+    var version = "Version 0.8.0 Beta";
+
     try
     {
         config = require('./iota-wallet-config');
     }
     catch(e)
     {
-        error_output("iota-wallet-config.js configuration file not found or invalid format");
+        error_output("iota-wallet-config.js configuration file not found or invalid format, maybe you forgot a comma after a value or section");
         return;
     }
 
@@ -83,6 +97,15 @@ async function main()
         return;
     }
 
+    // Set default config values if not present in config file
+    if ( config[cmd_filename].addressIndexNewAddressStart == undefined)
+    { config[cmd_filename].addressIndexNewAddressStart = 0; }
+
+    if ( config[cmd_filename].addressIndexSeachBalancesStart == undefined)
+    { config[cmd_filename].addressIndexSeachBalancesStart = 0; }
+
+    if (config.minWeightMagnitude == undefined)
+    { config.minWeightMagnitude = 14; }
 
     var db;
     try
@@ -119,6 +142,30 @@ async function main()
         return;
     }
 
+    // This command helps unskilled users to set the values for
+    // addressIndexNewAddressStart: and addressIndexSeachBalancesStart:
+    // correctly both values need to be entered in th config file
+    else if (command == "GetAddressIndexes" || command == "GAI")
+    {
+        // get min and max addresses wit a balance on them.
+        var search_index = 0;
+        var address_index = 0;
+        var query = { balance: { $ne: 0 } };
+        var rows = await dbQuery(db,query,{index: 1},"GetAddressIndexes/1");
+
+        if ( rows.length > 0)
+        {
+            search_index = rows[0].index;
+        }
+
+        var rows = await dbQuery(db,query,{index: -1},"GetAddressIndexes/2");
+
+        if ( rows.length > 0)
+        {
+            address_index = rows[0].index;
+        }
+        json_output({ addressIndexNewAddressStart: address_index, addressIndexSeachBalancesStart: search_index});
+    }
 
     // This syncs the tangle status to the local database, sync uses only addresses which might have gotten additional transactions
     // syncall syncs all addresses in the database even they should not be used for new transactions anymore
@@ -144,7 +191,7 @@ async function main()
 
         try
         {
-            await update_address_database(db, iota, seed, 0, end, sync_all_flag);
+            await update_address_database(db, iota, seed, config[cmd_filename].addressIndexSeachBalancesStart, end, sync_all_flag);
         }
         catch(e)
         {
@@ -154,14 +201,13 @@ async function main()
 
     }
 
-
     // Show Database
     else if (command == "SDB" || command == "ShowDB" || command == "ShowEntireDB")
     {
         var flag = 0;
         if ( command == "ShowEntireDB" ) { flag = 1; }
         var i;
-        var query = { };
+        var query = { index: { $gte: config[cmd_filename].addressIndexSeachBalancesStart }};
         try
         {
             var rows = await dbFind(db,query,{index: 1});
@@ -286,11 +332,15 @@ async function main()
     }
 
     // Get all balances from server and update database
-    else if (command == "UpdateBalances" || command == "UBS")
+    else if (command == "UpdateBalances" || command == "UBS" || command == "UpdateAllBalances" || command == "UABS")
     {
+        var flag;
+        if (command == "UpdateAllBalances" || command == "UABS")
+        { flag = 1 ;} else { flag = 0; }
+
         try
         {
-            var result = await updateBalances(db, iota);
+            var result = await updateBalances(db, iota, flag);
             json_output(result);
         }
         catch(e)
@@ -364,7 +414,11 @@ async function main()
 
                 try
                 {
-                    var result = await replayBundle(iota, bundles[bundle].tailTransaction, 5, 15); // 5 = tip selection depth , 15 = minWeightMagnitude
+                    // tip selection depth is set to 14 here what is quite high, I decided to do so that when you
+                    // make a replay you also give other older transactions a chance to get confirmed.
+                    // See: https://forum.iota.org/t/what-is-depth-and-what-should-i-set-it-to/1166
+                    var minWeightMagnitude = config.minWeightMagnitude;
+                    var result = await replayBundle(iota, bundles[bundle].tailTransaction, 14, minWeightMagnitude); // 14 = tip selection depth
                 }
                 catch(e)
                 {
@@ -408,10 +462,10 @@ async function main()
 
             // Replay and check confirmation status
             var i = 0;
-            while (bundles[bundle].confirmedTransactions == 0 && bundles[bundle].validFunding == true && i < 7)
+            while (bundles[bundle].confirmedTransactions == 0 && bundles[bundle].validFunding == true && i < 100)
             {
                 debug_output("Considering a replay waiting 300 seconds:",0);
-                await sleep(300);
+                await sleep(60);
 
                 // Check confirmation state before replaying
                 var confirmation_state = await getBundleConfirmationState(iota, bundle);
@@ -424,7 +478,11 @@ async function main()
 
                     try
                     {
-                        var result = await replayBundle(iota, bundles[bundle].tailTransaction, 5, 15); // 5 = tip selection depth , 15 = minWeightMagnitude
+                        // tip selection depth is set to 20 here what is quite high, I decided to do so that when you
+                        // make a replay you also give other older transactions a chance to get confirmed.
+                        // See: https://forum.iota.org/t/what-is-depth-and-what-should-i-set-it-to/1166
+                        var minWeightMagnitude = config.minWeightMagnitude;
+                        var result = await replayBundle(iota, bundles[bundle].tailTransaction, 20, minWeightMagnitude); // 20 = tip selection depth
                     }
                     catch(e)
                     {
@@ -517,6 +575,7 @@ function showcommands(version)
     debug_output("Replay                Address             Replay all unconfirmed transactions associated with the given address",0);
     debug_output("FullyAutomaticReplay  Address             Replays all unconfirmed transactions associated with the given address, fully automatic up to 7 times",0);
     debug_output("ShowDB                none                Shows data from the local database",0);
+    debug_output("GetAddressIndexes     none                Helps you to set the parameters addressIndexNewAddressStart and addressIndexSeachBalancesStart in config file",0);
 
     debug_output("",0);
     debug_output("Examples:",0);
@@ -537,7 +596,6 @@ function debug_output(message,loglevel)
 
 function error_output(message,loglevel)
 {
-    debug_output("ERROR: "+message,2);
     console.log("{ status: \"error\", message: \""+message+"\"}");
 }
 
@@ -577,7 +635,6 @@ async function getBundles(db, iota, address)
     {
         if ( bundles[transactions[i].bundle] == undefined)
         {
-            //var confirmation_state = getBundleConfirmationState(iota, transactions[i].bundle)
             bundles[transactions[i].bundle] = { };
             bundles[transactions[i].bundle].replays = 0;
             bundles[transactions[i].bundle].hash = transactions[i].bundle;
@@ -601,9 +658,17 @@ async function getBundles(db, iota, address)
     return return_value;
 }
 
-async function updateBalances(db_handle, iota)
+async function updateBalances(db_handle, iota, flag)
 {
-        var query = {};
+        if ( flag == 0)
+        {
+            var query = { index: { $gte: config[cmd_filename].addressIndexSeachBalancesStart }};
+        }
+        else
+        {
+            var query = {};
+        }
+
         var rows = await dbFind(db_handle,query,{index: 1});
         var i;
         var address_array = [];
@@ -658,7 +723,6 @@ async function execute_transfer(db_handle, iota, seed, dst_address, value, messa
         // find the funding addresses search the whole db for addresses with balance > 0 and sum them
         // up till there is enough balance for the transfer.
         var funding_array = [];
-//        var query = { balance: { $gt: 0 } };
         var query = {};
         var rows = await dbFind(db_handle,query,{index: 1});
 
@@ -675,7 +739,7 @@ async function execute_transfer(db_handle, iota, seed, dst_address, value, messa
             var i = 0;
             while (total < value && i < rows.length)
             {
-                // sometimes the database contains invalid values needs to be fixed
+                // sometimes the database contains invalid values this needs to be fixed
                 if (rows[i].address != undefined && iota.valid.isAddress(rows[i].address) && rows[i].balance > 0)
                 {
                     var input = {};
@@ -736,9 +800,9 @@ function doTransfer(iota, from_seed,transfers,options)
 
                             // OK got some help on this, 15 is OK for mainnet now. PoW is done
                             // changing the nonce till the transaction hash has 15 Trits = 5 Trytes at its
-                            // end which are Zero displayed by the digit 9.
+                            // end which are zero displayed by the digit 9.
                             // Conclusion: 15 shoud work here.
-                            var minWeightMagnitude = 15;
+                            var minWeightMagnitude = config.minWeightMagnitude;
                             iota.api.sendTransfer(from_seed, depth, minWeightMagnitude, transfers ,options,
                             function(error, success)
                             {
@@ -851,7 +915,7 @@ async function getBundlesToReplay(iota, address)
 async function get_new_address(db_handle,iota,seed,status)
 {
     var address = "";
-    var query = { status: "new" };
+    var query = { status: "new", index: { $gte: config[cmd_filename].addressIndexNewAddressStart } };
     var rows = await dbFind(db_handle,query,{index: 1});
     if ( rows.length == 0)
     {
@@ -890,10 +954,15 @@ async function addNewAddress(db_handle,iota,seed,adr_index)
         }
         else
         {
-            adr_index = 0;
+            adr_index = config[cmd_filename].addressIndexNewAddressStart + 1;
         }
-        debug_output("NEXT INDEX:"+adr_index,4);
     }
+
+    // Minimum index is set in configFile
+    if ( adr_index < config[cmd_filename].addressIndexNewAddressStart)
+    { adr_index = config[cmd_filename].addressIndexNewAddressStart + 1; }
+
+    debug_output("NEXT INDEX:"+adr_index,4);
 
     address = await getNewAddress(iota,seed,adr_index);
     address = address[0];
@@ -939,8 +1008,9 @@ async function update_address_database(db_handle,iota,seed,start_adr_index,max_a
             {
                 // Update address balance
                 var balance = await getBalance(iota, [address]);
+
                 debug_output("B: "+JSON.stringify(balance),9);
-                var update_result = await dbUpdate(db_handle,query,{ $set: {balance: balance.balances[0] }});
+                var update_result = await dbUpdate(db_handle,query,{ $set: {balance: parseInt(balance.balances[0]) }});
                 debug_output("DB Update completed",9);
 
                 var transactions = await findTransactions(iota, { addresses: [address] });
@@ -966,22 +1036,29 @@ async function update_address_database(db_handle,iota,seed,start_adr_index,max_a
                     }
 
                 }
-                // Address status
-                // 1. new = unused not attached to tangle
-                // 2. attached = has one or more transactions with value 0
-                // 3. used = has transactions but no confirmed outgoing transactions and balance > 0
-                // 4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
-                // 5. overused = has more than one outgoing transaction, this should not happen but can be forced by the user
-                if (outgoing_transactions_count == 1)
-                { status = "exhausted" }
-                else if (outgoing_transactions_count > 1)
-                { status = "overused"}
-                else if (outgoing_transactions_count == 0 && incoming_transactions_count > 0)
-                { status = "used" }
-                else if (outgoing_transactions_count == 0 && incoming_transactions_count == 0 && zero_value_transactions_count > 0)
-                { status = "attached" }
-                else if (outgoing_transactions_count == 0 && incoming_transactions_count == 0 && zero_value_transactions_count == 0 && (status == "" || status == undefined))
-                { status = "new";}
+
+                // never update addresses once marked as exhausted or overused
+                // after a snapshot they will appear to be new but they are not,
+                // and can not be reused
+                if ( status != "exhausted" && status != "overused" )
+                {
+                    // Address status
+                    // 1. new = unused not attached to tangle
+                    // 2. attached = has one or more transactions with value 0
+                    // 3. used = has transactions but no confirmed outgoing transactions and balance > 0
+                    // 4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
+                    // 5. overused = has more than one outgoing transaction, this should not happen but can be forced by the user
+                    if (outgoing_transactions_count == 1)
+                    { status = "exhausted" }
+                    else if (outgoing_transactions_count > 1)
+                    { status = "overused"}
+                    else if (outgoing_transactions_count == 0 && incoming_transactions_count > 0)
+                    { status = "used" }
+                    else if (outgoing_transactions_count == 0 && incoming_transactions_count == 0 && zero_value_transactions_count > 0)
+                    { status = "attached" }
+                    else if (outgoing_transactions_count == 0 && incoming_transactions_count == 0 && zero_value_transactions_count == 0 && (status == "" || status == undefined))
+                    { status = "new";}
+                }
 
                 // count new addresses to always have some new addresses in your db
                 if ( status == "new" ) {new_address_count++;}
@@ -1021,12 +1098,12 @@ async function getBundleConfirmationState(iota, bundle_hash)
     var result;
     var value = 0;
 
-    debug_output("T:"+JSON.stringify(transactions_in_bundle),9);
+    debug_output("Transactions in bundle: "+JSON.stringify(transactions_in_bundle),9);
 
     for (var j = 0; j < transactions_in_bundle.length; j++)
     {
         transaction.push(transactions_in_bundle[j].hash);
-        if (transactions_in_bundle[j].value > 0)
+        if (parseInt(transactions_in_bundle[j].value) > 0)
         { value += parseInt(transactions_in_bundle[j].value); }
     }
 
@@ -1126,6 +1203,21 @@ function dbUpdate(dbHandle,query,update)
     );
 }
 
+async function dbQuery(dbHandle,query,sort,query_info)
+{
+    var found_rows;
+    try
+    {
+        found_rows = await dbFind(dbHandle,query,sort);
+    }
+    catch(e)
+    {
+        error_output(query_info+" failed. "+e.message);
+        process.exit(1);
+    }
+    return found_rows;
+}
+
 function dbFind(dbHandle,query,sort)
 {
     if (sort == undefined)
@@ -1174,6 +1266,8 @@ function dbDelete(dbHandle,query)
     );
 }
 
+
+
 function replayBundle(iotaHandle, tail, depth, minWeightMagnitude)
 {
     return new Promise(
@@ -1205,3 +1299,5 @@ async function sleep(x)
         }
     );
 }
+
+

@@ -1,6 +1,6 @@
 {
   "name": "release",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "IOTA commandline wallet",
   "main": "my-wallet.js",
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/MichaelSchwab/iota-commandline-wallet#readme",
   "dependencies": {
-    "iota.lib.js": "^0.4.0",
+    "iota.lib.js": "^0.4.1",
     "nedb": "^1.8.0"
   }
 }

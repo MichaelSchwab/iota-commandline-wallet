@@ -13,6 +13,7 @@ how to do this is shown in the section "Setting up a IOTA full node" below.
 Installation:
 
 Youtube video guideing you through the installation: https://www.youtube.com/watch?v=ke1NERpgbd4
+This video shows how to install nodejs, additional modules and the download of the wallet itself as a .zip archieve.
 
 Install nodejs Version >= 8.0.0
 create a directory and put the my-wallet.js and iota-wallet-config.js in there
@@ -44,6 +45,7 @@ Now you are ready to run, enter:
 
 Youtube video on how to operate the wallet:
 https://www.youtube.com/watch?v=cwTxv-LnvYw
+shows the initial configuration, a transfer with lookup of confirmation state and the replay of a bundle.
 
 Old Introductional Video
 https://www.youtube.com/watch?v=nWo1vwNsXfo
@@ -70,3 +72,16 @@ on https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1
 and
 on https://github.com/iotaledger/iri
 
+New Features in 0.8.0 are:
+
+Changes in the config file:
+
+1. now you can set minWeightMagnitude: which defaults to 14 currently
+2. addressIndexNewAddressStart: This is to prevent address double usage after a snapshot, you can set a minimum address index where the generation of new addresses shoud start.
+3. addressIndexSeachBalancesStart: This is just a spped up, if you got lots (>1000) addresses, you can set a minimum index for address scanning, so that you always scan old addresses where nothing happend anymore example for the UpdateBalances command.
+
+General changes:
+
+1. New Command: GetAddressIndexes If you have a Balance on you seed/wallet this will give you appropriate values for the two values above.
+2. Added short commands: UpdateBalances = UBS, GetNewAddress = GNA, GetConfirmationState = GCS, just for the ease of use.
+3. Some minor bugfixes.
