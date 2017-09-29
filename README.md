@@ -73,6 +73,7 @@ and
 on https://github.com/iotaledger/iri
 
 New Features in 0.8.0 are:
+Instructional Video: https://youtu.be/o4m05b56muU
 
 Changes in the config file:
 
