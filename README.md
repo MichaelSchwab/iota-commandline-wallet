@@ -24,6 +24,9 @@ Install additional modules
 
 `npm install nedb`
 
+The node you want to connect to needs to have the AttachToTangle command enabled, if not you wont be able to send Transactions.
+You can use IOTA Proxy ( https://github.com/TimSamshuijzen/iotaproxy ) to do the Proof of Work locally. Windows installation is a bit complex since you need to install the build enviroenment beforehand. See: https://www.npmjs.com/package/windows-build-tools
+
 Setup:
 
 Now you need to edit the configuration file to enter your seed
