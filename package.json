@@ -1,25 +1,25 @@
 {
   "name": "release",
-  "version": "0.8.0",
-  "description": "IOTA commandline wallet",
-  "main": "my-wallet.js",
+  "version": "2.7.0",
+  "description": "Al-Photoshop",
+  "main": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MichaelSchwab/iota-commandline-wallet.git"
+    "url": "git+https://github.com/MichaelSchwab"
   },
   "keywords": [
-    "IOTA",
-    "wallet"
+    "adobe-photoshop",
+    "Al-Photoshop"
   ],
   "author": "Michael Schwab",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/MichaelSchwab/iota-commandline-wallet/issues"
+    "url": "https://github.com/MichaelSchwab"
   },
-  "homepage": "https://github.com/MichaelSchwab/iota-commandline-wallet#readme",
+  "homepage": "https://github.com/MichaelSchwab",
   "dependencies": {
     "iota.lib.js": "^0.4.1",
     "nedb": "^1.8.0"
